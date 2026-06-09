@@ -17,24 +17,26 @@
 - Каталог, карточка товара, создание лота, покупка, профиль с заказами.
 - Миграции применяются автоматически при старте бэкенда.
 
-## Деплой в Dokploy
+## Деплой в Dokploy (отдельные сервисы)
 
-Репозиторий заточен под docker-сборку, локально ничего ставить не нужно:
+Postgres создаётся отдельно (из шаблона Dokploy). Дальше два Application-сервиса из этого репо:
 
-1. **Вариант Compose**: создай Compose-сервис, укажи репо — Dokploy подхватит `docker-compose.yml`.
-2. **Вариант по отдельности**: три сервиса — Postgres (из шаблона), `./backend` (Dockerfile), `./front` (Dockerfile).
+### 1. Backend
+- Build type: **Dockerfile**, Docker File: `backend/Dockerfile`, Docker Context Path: `backend`
+- Порт: `8080`
+- Env:
+  - `DATABASE_URL` — internal-строка подключения к твоему Postgres (вида `postgresql://postgres:***@host:5432/postgres`)
+  - `JWT_SECRET` — случайная строка, **обязательно**
+  - `CORS_ORIGIN` — домен фронта, напр. `https://pinky.example.com`
 
-### Переменные окружения
+### 2. Front
+- Build type: **Dockerfile**, Docker File: `front/Dockerfile`, Docker Context Path: `front`
+- Порт: `3000`
+- Build arg: `NEXT_PUBLIC_API_URL` — **публичный** URL бэкенда (его домен в Dokploy), напр. `https://api.pinky.example.com`
 
-| Переменная            | Где      | Что                                                  |
-|-----------------------|----------|------------------------------------------------------|
-| `POSTGRES_PASSWORD`   | db/backend | пароль Postgres                                    |
-| `DATABASE_URL`        | backend  | `postgres://pinky:...@db:5432/pinky?sslmode=disable` |
-| `JWT_SECRET`          | backend  | **обязательно поменяй** на случайную строку          |
-| `CORS_ORIGIN`         | backend  | домен фронта, напр. `https://pinky.example.com`      |
-| `NEXT_PUBLIC_API_URL` | front (build arg) | публичный URL бэкенда, напр. `https://api.pinky.example.com` |
+> `NEXT_PUBLIC_API_URL` вшивается в браузерный бандл на этапе сборки, поэтому это build-arg, а не runtime env. И это должен быть публичный домен бэкенда (запросы идут из браузера пользователя), а не internal-хост докер-сети.
 
-> `NEXT_PUBLIC_API_URL` вшивается в бандл на этапе сборки — в Dokploy задай его как build-arg фронта.
+Миграции БД применяются автоматически при старте бэкенда — отдельно ничего накатывать не надо.
 
 ## API
 
@@ -53,7 +55,7 @@ GET  /api/health             — healthcheck
 ## Локальный запуск (если вдруг захочется)
 
 ```bash
-docker compose up --build
-# front:   http://localhost:3000
-# backend: http://localhost:8080
+# postgres любой, потом:
+cd backend && DATABASE_URL=postgres://... go run .
+cd front && NEXT_PUBLIC_API_URL=http://localhost:8080 npm run dev
 ```
