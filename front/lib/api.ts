@@ -1,7 +1,11 @@
 // Thin client for the Go backend. Token lives in localStorage —
 // the whole point is anonymous, frictionless accounts.
+//
+// By default requests go to the front's own origin (/api/...) and are
+// proxied server-side to the backend (see app/api/[...path]/route.ts).
+// Set NEXT_PUBLIC_API_URL at build time only if you want direct calls.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export type Product = {
   id: number;

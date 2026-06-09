@@ -4,8 +4,9 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 COPY . .
-# API URL is baked in at build time for the browser bundle
-ARG NEXT_PUBLIC_API_URL=http://localhost:8080
+# Optional: bake a direct API URL into the browser bundle.
+# Leave empty (default) to use the built-in server-side proxy (/api/* -> API_URL).
+ARG NEXT_PUBLIC_API_URL=
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN npm run build
 

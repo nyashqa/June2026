@@ -27,14 +27,15 @@ Postgres создаётся отдельно (из шаблона Dokploy). Да
 - Env:
   - `DATABASE_URL` — internal-строка подключения к твоему Postgres (вида `postgresql://postgres:***@host:5432/postgres`)
   - `JWT_SECRET` — случайная строка, **обязательно**
-  - `CORS_ORIGIN` — домен фронта, напр. `https://pinky.example.com`
+  - `CORS_ORIGIN` — опционально (при проксировании через фронт CORS не нужен)
 
 ### 2. Front
 - Build type: **Dockerfile**, Docker File: `front/Dockerfile`, Docker Context Path: `front`
 - Порт: `3000`
-- Build arg: `NEXT_PUBLIC_API_URL` — **публичный** URL бэкенда (его домен в Dokploy), напр. `https://api.pinky.example.com`
+- Env (runtime):
+  - `API_URL` — **внутренний** адрес бэкенда в докер-сети, напр. `http://yoonaproject-backend-xxxxx:8080`
 
-> `NEXT_PUBLIC_API_URL` вшивается в браузерный бандл на этапе сборки, поэтому это build-arg, а не runtime env. И это должен быть публичный домен бэкенда (запросы идут из браузера пользователя), а не internal-хост докер-сети.
+> Браузер ходит только на домен фронта (`/api/...`), а Node-сервер Next.js проксирует запросы бэкенду (`front/app/api/[...path]/route.ts`). Поэтому бэкенду не нужен публичный домен, CORS не задействован, а `API_URL` — обычная runtime-переменная (никаких build-args).
 
 Миграции БД применяются автоматически при старте бэкенда — отдельно ничего накатывать не надо.
 
