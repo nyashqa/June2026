@@ -20,6 +20,20 @@ export default function ProductPage() {
       .catch((e) => setError(e.message));
   }, [id]);
 
+  async function writeSeller() {
+    if (!getToken()) {
+      router.push("/register");
+      return;
+    }
+    setError("");
+    try {
+      const { chat_id } = await api.startChat(id);
+      router.push(`/chats/${chat_id}`);
+    } catch (e: any) {
+      setError(e.message);
+    }
+  }
+
   async function buy() {
     if (!getToken()) {
       router.push("/register");
@@ -85,9 +99,14 @@ export default function ProductPage() {
         <hr className="hr-hearts" />
 
         {bought ? (
-          <div className="success-box">
-            🎉 Заказ оформлен! Продавец свяжется с тобой. 💖
-          </div>
+          <>
+            <div className="success-box">
+              🎉 Заказ оформлен! Обсуди доставку с продавцом. 💖
+            </div>
+            <button className="btn btn--lime" onClick={writeSeller}>
+              💬 Написать продавцу
+            </button>
+          </>
         ) : product.is_sold ? (
           <span className="badge-sold" style={{ fontSize: 20 }}>
             ПРОДАНО 💔
@@ -101,6 +120,11 @@ export default function ProductPage() {
             <button className="btn btn--big glitter" onClick={buy} disabled={busy}>
               {busy ? "⏳..." : "💖 КУПИТЬ 💖"}
             </button>
+            <p style={{ marginTop: 12 }}>
+              <button className="btn btn--lime" onClick={writeSeller}>
+                💬 Написать продавцу
+              </button>
+            </p>
           </>
         )}
       </div>

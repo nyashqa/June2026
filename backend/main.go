@@ -65,6 +65,12 @@ func main() {
 	mux.HandleFunc("POST /api/products/{id}/buy", s.authMiddleware(s.handleBuyProduct))
 	mux.HandleFunc("GET /api/orders", s.authMiddleware(s.handleMyOrders))
 
+	// chat (buyer <-> seller)
+	mux.HandleFunc("POST /api/products/{id}/chat", s.authMiddleware(s.handleStartChat))
+	mux.HandleFunc("GET /api/chats", s.authMiddleware(s.handleListChats))
+	mux.HandleFunc("GET /api/chats/{id}/messages", s.authMiddleware(s.handleListMessages))
+	mux.HandleFunc("POST /api/chats/{id}/messages", s.authMiddleware(s.handleSendMessage))
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"

@@ -40,8 +40,26 @@ CREATE TABLE IF NOT EXISTS orders (
 	created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS chats (
+	id           BIGSERIAL PRIMARY KEY,
+	product_id   BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+	buyer_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	created_at   TIMESTAMPTZ NOT NULL DEFAULT now(),
+	UNIQUE (product_id, buyer_id)
+);
+
+CREATE TABLE IF NOT EXISTS messages (
+	id           BIGSERIAL PRIMARY KEY,
+	chat_id      BIGINT NOT NULL REFERENCES chats(id) ON DELETE CASCADE,
+	sender_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+	body         TEXT NOT NULL,
+	created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_products_created ON products(created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_orders_buyer ON orders(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_chats_buyer ON chats(buyer_id);
+CREATE INDEX IF NOT EXISTS idx_messages_chat ON messages(chat_id, id);
 `
 
 func connectDB(ctx context.Context) *pgxpool.Pool {

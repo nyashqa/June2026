@@ -23,6 +23,26 @@ export type Product = {
   created_at: string;
 };
 
+export type Chat = {
+  id: number;
+  product_id: number;
+  product_title: string;
+  buyer_id: number;
+  seller_id: number;
+  peer: string;
+  last_body: string;
+  last_at: string;
+};
+
+export type Message = {
+  id: number;
+  chat_id: number;
+  sender_id: number;
+  sender: string;
+  body: string;
+  created_at: string;
+};
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("pinky_token");
@@ -101,6 +121,25 @@ export const api = {
     request<{ order_id: number }>(
       `/api/products/${id}/buy`,
       { method: "POST" },
+      true
+    ),
+
+  startChat: (productId: string | number) =>
+    request<{ chat_id: number }>(
+      `/api/products/${productId}/chat`,
+      { method: "POST" },
+      true
+    ),
+
+  listChats: () => request<Chat[]>("/api/chats", {}, true),
+
+  listMessages: (chatId: string | number, after = 0) =>
+    request<Message[]>(`/api/chats/${chatId}/messages?after=${after}`, {}, true),
+
+  sendMessage: (chatId: string | number, body: string) =>
+    request<Message>(
+      `/api/chats/${chatId}/messages`,
+      { method: "POST", body: JSON.stringify({ body }) },
       true
     ),
 

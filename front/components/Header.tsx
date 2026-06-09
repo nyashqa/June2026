@@ -29,6 +29,9 @@ export default function Header() {
           </Link>
           {username ? (
             <>
+              <Link href="/chats" className="btn">
+                💬 Чаты
+              </Link>
               <Link href="/profile" className="btn">
                 👛 {username}
               </Link>
