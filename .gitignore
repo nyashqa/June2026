@@ -1,0 +1,16 @@
+# node / next
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+
+# go
+backend/bin/
+*.exe
+
+# env & local
+.env
+.env.local
+.env*.local
+.DS_Store
