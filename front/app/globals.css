@@ -25,14 +25,23 @@ body {
 body {
   font-family: "Comic Sans MS", "Comic Sans", "Chalkboard SE", cursive, sans-serif;
   color: #6b0044;
-  /* tiled-gradient background, very 2000s homepage */
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><text y="18" font-size="16">💖</text></svg>'), auto;
+}
+
+/* Фон вынесен в фиксированный слой: background-attachment: fixed заставлял
+   перерисовывать весь экран при каждом скролле (жуткие лаги на Retina). */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
   background:
     radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.45) 0 6px, transparent 7px),
     radial-gradient(circle at 80% 60%, rgba(255, 255, 255, 0.35) 0 4px, transparent 5px),
     radial-gradient(circle at 50% 90%, rgba(255, 255, 255, 0.3) 0 5px, transparent 6px),
     linear-gradient(135deg, var(--barbie-pale) 0%, var(--barbie-light) 45%, var(--barbie-hot) 100%);
-  background-attachment: fixed;
-  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"><text y="18" font-size="16">💖</text></svg>'), auto;
+  /* рисуется один раз на своём GPU-слое */
+  transform: translateZ(0);
 }
 
 a {
@@ -70,30 +79,21 @@ a {
   to { visibility: hidden; }
 }
 
-/* neon sign flicker */
+/* neon sign flicker — тень статичная, мигаем дешёвой opacity (GPU),
+   анимация text-shadow с большим блюром лагала на слабых машинах */
 .neon {
   color: #fff;
   text-shadow:
     0 0 4px #fff,
     0 0 10px var(--barbie-hot),
     0 0 21px var(--barbie-hot),
-    0 0 42px var(--barbie),
-    0 0 82px var(--barbie);
+    0 0 42px var(--barbie);
   animation: neon-flicker 3s infinite alternate;
 }
 
 @keyframes neon-flicker {
-  0%, 19%, 21%, 23%, 80%, 100% {
-    text-shadow:
-      0 0 4px #fff,
-      0 0 10px var(--barbie-hot),
-      0 0 21px var(--barbie-hot),
-      0 0 42px var(--barbie),
-      0 0 82px var(--barbie);
-  }
-  20%, 22%, 79.5% {
-    text-shadow: none;
-  }
+  0%, 19%, 21%, 23%, 80%, 100% { opacity: 1; }
+  20%, 22%, 79.5% { opacity: 0.4; }
 }
 
 /* bouncing letters, "под старые флеш-сайты" */
@@ -113,24 +113,29 @@ a {
   overflow: hidden;
 }
 
+/* полоска бежит через transform (композитинг на GPU),
+   а не через background-position (перерисовка каждый кадр) */
 .glitter::after {
   content: "";
   position: absolute;
-  inset: 0;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 60%;
   background: linear-gradient(
     105deg,
-    transparent 40%,
+    transparent 20%,
     rgba(255, 255, 255, 0.9) 50%,
-    transparent 60%
+    transparent 80%
   );
-  background-size: 250% 100%;
+  transform: translateX(-150%);
   animation: glitter-sweep 2.5s linear infinite;
   pointer-events: none;
+  will-change: transform;
 }
 
 @keyframes glitter-sweep {
-  from { background-position: 200% 0; }
-  to { background-position: -50% 0; }
+  to { transform: translateX(300%); }
 }
 
 /* ========== MARQUEE (бегущая строка) ========== */
@@ -150,6 +155,7 @@ a {
   display: inline-block;
   padding-left: 100%;
   animation: marquee 18s linear infinite;
+  will-change: transform;
 }
 
 @keyframes marquee {
@@ -265,6 +271,17 @@ a {
 .product-card:hover {
   transform: rotate(-1.5deg) scale(1.03);
   border-style: solid;
+}
+
+/* в каталоге может быть 100 карточек — вечный блеск на каждой лагает,
+   поэтому в сетке полоска пробегает только при наведении */
+.product-card.glitter::after {
+  animation: none;
+  will-change: auto;
+}
+
+.product-card.glitter:hover::after {
+  animation: glitter-sweep 0.9s linear;
 }
 
 .product-card__emoji {
@@ -384,6 +401,7 @@ a {
   pointer-events: none;
   animation: sparkle-fall linear infinite;
   z-index: 5;
+  will-change: transform;
 }
 
 @keyframes sparkle-fall {
@@ -535,4 +553,16 @@ a {
 
 .chat-input input:focus {
   outline: 2px solid var(--barbie-hot);
+}
+
+/* --- ⚡ perf: отключаем вечные анимации тем, кто просил поменьше движения --- */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
