@@ -1,37 +1,64 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Metadata } from "next";
-import { notFound } from "next/navigation";
-import { formatPrice, Product } from "@/lib/api";
-import { fetchProduct } from "@/lib/server-api";
-import BuyBox from "@/components/BuyBox";
+import { api, getToken, Product, formatPrice } from "@/lib/api";
 
-// SSR: товар рендерится на сервере; интерактив (купить/написать) — в <BuyBox/>
-export const dynamic = "force-dynamic";
+export default function ProductPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [error, setError] = useState("");
+  const [bought, setBought] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-type Params = { params: Promise<{ id: string }> };
+  useEffect(() => {
+    api
+      .getProduct(id)
+      .then(setProduct)
+      .catch((e) => setError(e.message));
+  }, [id]);
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
-  const { id } = await params;
-  try {
-    const p = await fetchProduct(id);
-    return {
-      title: `${p.title} — ${formatPrice(p.price_cents, p.currency)} | Pinky Market 💖`,
-      description: p.description.slice(0, 160) || `Лот от ${p.seller} на Pinky Market`,
-    };
-  } catch {
-    return { title: "Лот не найден | Pinky Market 💖" };
+  async function writeSeller() {
+    if (!getToken()) {
+      router.push("/register");
+      return;
+    }
+    setError("");
+    try {
+      const { chat_id } = await api.startChat(id);
+      router.push(`/chats/${chat_id}`);
+    } catch (e: any) {
+      setError(e.message);
+    }
   }
-}
 
-export default async function ProductPage({ params }: Params) {
-  const { id } = await params;
-
-  let product: Product;
-  try {
-    product = await fetchProduct(id);
-  } catch {
-    notFound();
+  async function buy() {
+    if (!getToken()) {
+      router.push("/register");
+      return;
+    }
+    setBusy(true);
+    setError("");
+    try {
+      await api.buyProduct(id);
+      setBought(true);
+      setProduct((p) => (p ? { ...p, is_sold: true } : p));
+    } catch (e: any) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
   }
+
+  if (error && !product) return <p className="error-text">{error}</p>;
+  if (!product)
+    return (
+      <p className="blink" style={{ textAlign: "center" }}>
+        ⏳ Загрузка...
+      </p>
+    );
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -71,12 +98,35 @@ export default async function ProductPage({ params }: Params) {
 
         <hr className="hr-hearts" />
 
-        <BuyBox
-          productId={product.id}
-          priceCents={product.price_cents}
-          currency={product.currency}
-          isSold={product.is_sold}
-        />
+        {bought ? (
+          <>
+            <div className="success-box">
+              🎉 Заказ оформлен! Обсуди доставку с продавцом. 💖
+            </div>
+            <button className="btn btn--lime" onClick={writeSeller}>
+              💬 Написать продавцу
+            </button>
+          </>
+        ) : product.is_sold ? (
+          <span className="badge-sold" style={{ fontSize: 20 }}>
+            ПРОДАНО 💔
+          </span>
+        ) : (
+          <>
+            <p className="neon" style={{ fontSize: 30, margin: "8px 0" }}>
+              {formatPrice(product.price_cents, product.currency)}
+            </p>
+            {error && <p className="error-text">{error}</p>}
+            <button className="btn btn--big glitter" onClick={buy} disabled={busy}>
+              {busy ? "⏳..." : "💖 КУПИТЬ 💖"}
+            </button>
+            <p style={{ marginTop: 12 }}>
+              <button className="btn btn--lime" onClick={writeSeller}>
+                💬 Написать продавцу
+              </button>
+            </p>
+          </>
+        )}
       </div>
 
       <p style={{ textAlign: "center", marginTop: 18 }}>

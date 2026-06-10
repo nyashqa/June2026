@@ -1,21 +1,23 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Product } from "@/lib/api";
-import { fetchProducts } from "@/lib/server-api";
+import { api, Product } from "@/lib/api";
 import ProductCard from "@/components/ProductCard";
 import BounceText from "@/components/BounceText";
 
-// SSR: каталог рендерится на сервере при каждом запросе (данные свежие,
-// страница приходит готовой — без клиентского "Загрузка...")
-export const dynamic = "force-dynamic";
+export default function HomePage() {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-export default async function HomePage() {
-  let products: Product[] = [];
-  let error = "";
-  try {
-    products = await fetchProducts();
-  } catch (e) {
-    error = e instanceof Error ? e.message : "backend unreachable";
-  }
+  useEffect(() => {
+    api
+      .listProducts()
+      .then(setProducts)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
     <div>
@@ -45,12 +47,17 @@ export default async function HomePage() {
         ~ СВЕЖИЕ ЛОТЫ ~
       </h2>
 
+      {loading && (
+        <p style={{ textAlign: "center", marginTop: 20 }} className="blink">
+          ⏳ Загрузка... (почти как на dial-up)
+        </p>
+      )}
       {error && (
         <p className="error-text" style={{ marginTop: 20 }}>
           Не удалось загрузить каталог: {error}
         </p>
       )}
-      {!error && products.length === 0 && (
+      {!loading && !error && products.length === 0 && (
         <div className="card tilt-left" style={{ textAlign: "center", margin: "24px auto", maxWidth: 420 }}>
           <p style={{ fontSize: 40 }}>🛍️</p>
           <p>

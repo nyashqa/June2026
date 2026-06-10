@@ -14,8 +14,7 @@ type Spark = {
 };
 
 // Falling glitter, like the cursor-trail scripts every 2000s fan site had.
-// 12 штук — компромисс: каждая блёстка это отдельный композитный слой.
-export default function Sparkles({ count = 12 }: { count?: number }) {
+export default function Sparkles({ count = 18 }: { count?: number }) {
   const [sparks, setSparks] = useState<Spark[]>([]);
 
   useEffect(() => {
